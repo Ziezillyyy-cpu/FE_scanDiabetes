@@ -1,14 +1,16 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { StatusBar } from 'expo-status-bar';
+import { getMyProfile, logout, UserDto } from '@/services/authService';
 
 type MenuItem = {
   icon: React.ComponentProps<typeof Ionicons>['name'];
@@ -23,7 +25,38 @@ const MENU: MenuItem[] = [
   { icon: 'information-circle-outline', label: 'About' },
 ];
 
+const DIABETES_LABELS: Record<string, string> = {
+  Type1: 'Diabetes Tipe 1',
+  Type2: 'Diabetes Tipe 2',
+  PreDiabetes: 'Pre-Diabetes',
+  None: 'Tidak ada',
+};
+
 export default function ProfileScreen() {
+  const [user, setUser] = useState<UserDto | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchProfile();
+  }, []);
+
+  const fetchProfile = async () => {
+    try {
+      const data = await getMyProfile();
+      setUser(data);
+    } catch (_) {
+      // Jika gagal (token expired dll) → kembali ke login
+      router.replace('/login');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    router.replace('/login');
+  };
+
   return (
     <View style={s.root}>
       <StatusBar style="dark" backgroundColor="#4ECDC4" />
@@ -39,11 +72,47 @@ export default function ProfileScreen() {
 
       {/* Avatar section */}
       <View style={s.avatarSection}>
-        <View style={s.avatar}>
-          <Ionicons name="person" size={48} color="#FFF" />
-        </View>
-        <Text style={s.name}>User</Text>
-        <Text style={s.email}>user@example.com</Text>
+        {loading ? (
+          <ActivityIndicator color="#4ECDC4" size="large" />
+        ) : (
+          <>
+            <View style={s.avatar}>
+              <Ionicons name="person" size={48} color="#FFF" />
+            </View>
+            <Text style={s.name}>{user?.name ?? 'User'}</Text>
+            <Text style={s.email}>{user?.email ?? ''}</Text>
+
+            {/* Diabetes type badge */}
+            {user?.diabetesType && (
+              <View style={s.badge}>
+                <Ionicons name="pulse" size={12} color="#4ECDC4" />
+                <Text style={s.badgeText}>
+                  {DIABETES_LABELS[user.diabetesType] ?? user.diabetesType}
+                </Text>
+              </View>
+            )}
+
+            {/* Stats row */}
+            <View style={s.statsRow}>
+              {user?.gender && (
+                <View style={s.statItem}>
+                  <Ionicons
+                    name={user.gender === 'Male' ? 'male' : 'female'}
+                    size={16}
+                    color="#4ECDC4"
+                  />
+                  <Text style={s.statText}>{user.gender}</Text>
+                </View>
+              )}
+              {user?.phoneNumber && (
+                <View style={s.statItem}>
+                  <Ionicons name="call-outline" size={16} color="#4ECDC4" />
+                  <Text style={s.statText}>{user.phoneNumber}</Text>
+                </View>
+              )}
+            </View>
+          </>
+        )}
       </View>
 
       {/* Menu */}
@@ -62,10 +131,7 @@ export default function ProfileScreen() {
         </View>
 
         {/* Logout */}
-        <TouchableOpacity
-          style={s.logoutBtn}
-          onPress={() => router.replace('/login')}
-        >
+        <TouchableOpacity style={s.logoutBtn} onPress={handleLogout}>
           <Ionicons name="log-out-outline" size={22} color="#FFF" />
           <Text style={s.logoutText}>Logout</Text>
         </TouchableOpacity>
@@ -104,6 +170,8 @@ const s = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 8,
     elevation: 3,
+    minHeight: 180,
+    justifyContent: 'center',
   },
   avatar: {
     width: 90,
@@ -116,6 +184,30 @@ const s = StyleSheet.create({
   },
   name: { fontSize: 22, fontWeight: '700', color: '#1A1A1A' },
   email: { fontSize: 14, color: '#888', marginTop: 4 },
+
+  badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#E0FAF7',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 20,
+    marginTop: 10,
+  },
+  badgeText: { fontSize: 12, color: '#3BB8B0', fontWeight: '600' },
+
+  statsRow: {
+    flexDirection: 'row',
+    gap: 16,
+    marginTop: 10,
+  },
+  statItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  statText: { fontSize: 13, color: '#666' },
 
   /* Menu */
   menu: { flex: 1, paddingHorizontal: 20, paddingTop: 24 },

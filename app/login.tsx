@@ -9,26 +9,42 @@ import {
   Platform,
   ScrollView,
   StatusBar,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { login } from '@/services/authService';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
-    // TODO: Implementasi logika login
-    router.replace('/(tabs)');
+  const handleLogin = async () => {
+    if (!email.trim() || !password.trim()) {
+      Alert.alert('Peringatan', 'Email dan password harus diisi.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await login(email.trim(), password);
+      router.replace('/(tabs)');
+    } catch (error: any) {
+      Alert.alert('Login Gagal', error.message || 'Terjadi kesalahan. Coba lagi.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleGoogleLogin = () => {
-    // TODO: Implementasi login Google
+    Alert.alert('Info', 'Login Google belum tersedia.');
   };
 
   const handlePhoneLogin = () => {
-    // TODO: Implementasi login no. telepon
+    Alert.alert('Info', 'Login nomor telepon belum tersedia.');
   };
 
   return (
@@ -54,13 +70,14 @@ export default function LoginScreen() {
               <View style={styles.inputContainer}>
                 <TextInput
                   style={styles.input}
-                  placeholder="Anto123@gmail.com"
+                  placeholder="contoh@email.com"
                   placeholderTextColor="#A0A0A0"
                   value={email}
                   onChangeText={setEmail}
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoCorrect={false}
+                  editable={!loading}
                 />
               </View>
             </View>
@@ -77,6 +94,7 @@ export default function LoginScreen() {
                   onChangeText={setPassword}
                   secureTextEntry={!showPassword}
                   autoCapitalize="none"
+                  editable={!loading}
                 />
                 <TouchableOpacity
                   style={styles.eyeButton}
@@ -98,9 +116,22 @@ export default function LoginScreen() {
             </TouchableOpacity>
 
             {/* Tombol Masuk */}
-            <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-              <Text style={styles.loginButtonText}>MASUK</Text>
+            <TouchableOpacity
+              style={[styles.loginButton, loading && styles.loginButtonDisabled]}
+              onPress={handleLogin}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="#FFF" size="small" />
+              ) : (
+                <Text style={styles.loginButtonText}>MASUK</Text>
+              )}
             </TouchableOpacity>
+
+            {/* Info akun demo */}
+            <View style={styles.demoInfo}>
+              <Text style={styles.demoText}>Demo: budi@example.com / password123</Text>
+            </View>
 
             {/* Divider */}
             <View style={styles.dividerContainer}>
@@ -223,18 +254,33 @@ const styles = StyleSheet.create({
     height: 50,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 12,
     shadowColor: '#F7941D',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
   },
+  loginButtonDisabled: {
+    backgroundColor: '#F7941DAA',
+  },
   loginButtonText: {
     color: '#FFF',
     fontSize: 17,
     fontWeight: '700',
     letterSpacing: 1.5,
+  },
+  demoInfo: {
+    backgroundColor: '#E0FAF7',
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  demoText: {
+    fontSize: 12,
+    color: '#3BB8B0',
+    fontWeight: '500',
   },
   dividerContainer: {
     flexDirection: 'row',
