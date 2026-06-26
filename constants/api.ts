@@ -9,7 +9,7 @@ import { Platform } from 'react-native';
 // Ganti dengan IP komputer kamu jika test di device fisik!
 const getBaseUrl = () => {
   // Menggunakan IP lokal komputer agar bisa diakses oleh device fisik (Expo Go)
-  return 'http://100.101.22.25:5017/api';
+  return 'http://192.168.1.19:5017/api';
 };
 
 export const API_BASE_URL = getBaseUrl();
